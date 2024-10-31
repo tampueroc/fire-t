@@ -16,3 +16,5 @@ for i in range(0, 5):
     print('Target Isochrone:')
     print(sample_info['iso_frame_files'][sample_info['iso_target_index']])
     print('\n')
+
+dataset[0]
