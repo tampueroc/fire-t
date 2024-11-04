@@ -7,8 +7,23 @@ import pandas as pd
 import json
 import rioxarray
 
+import random
+import numpy as np
+
+
+def set_seed(seed):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.backends.cudnn.deterministic = True
+
+
+set_seed(42)
+
+
 class FireDataset(Dataset):
-    def __init__(self, data_dir, sequence_length=3, transform=None):
+    def __init__(self, data_dir, sequence_length=3, split='train', transform=None):
         self.data_dir = data_dir
         self.sequence_length = sequence_length
         self.transform = transform
@@ -16,6 +31,7 @@ class FireDataset(Dataset):
         self._load_landscape_data()
         self._load_weather_data()
         self._load_spatial_index()
+        self.split = split
         self._prepare_samples()
 
     def _load_spatial_index(self):
@@ -99,11 +115,34 @@ class FireDataset(Dataset):
 
         return weather_tensor
 
+    def _split_indices(self, sequence_indices):
+        # Remove duplicates to get unique sequence IDs
+        unique_sequences = list(set(sequence_indices))
+        unique_sequences.sort()  # Ensure consistent order
+
+        # Shuffle the sequences
+        import random
+        random.seed(42)  # For reproducibility
+        random.shuffle(unique_sequences)
+
+        # Calculate split sizes
+        total_sequences = len(unique_sequences)
+        train_size = int(0.8 * total_sequences)
+        val_size = int(0.1 * total_sequences)
+
+        # Split the sequences
+        train_indices = unique_sequences[:train_size]
+        val_indices = unique_sequences[train_size:train_size + val_size]
+        test_indices = unique_sequences[train_size + val_size:]
+
+        return train_indices, val_indices, test_indices
 
     def _prepare_samples(self):
         fire_frames_root = os.path.join(self.data_dir, 'fire_frames')
         isochrones_root = os.path.join(self.data_dir, 'isochrones')
         sequence_dirs = sorted(os.listdir(fire_frames_root))
+        sequence_indices = []
+
 
         for seq_dir in sequence_dirs:
             seq_id = seq_dir.replace('sequence_', '')
@@ -139,6 +178,18 @@ class FireDataset(Dataset):
                     'iso_frame_files': iso_frame_files
                 }
                 self.samples.append(sample)
+            sequence_indices.append(seq_id)
+
+        # After collecting all samples, split the indices
+        self.train_indices, self.val_indices, self.test_indices = self._split_indices(sequence_indices)
+
+        # Filter samples based on the split
+        if self.split == 'train':
+            self.samples = [s for s in self.samples if s['sequence_id'] in self.train_indices]
+        elif self.split == 'val':
+            self.samples = [s for s in self.samples if s['sequence_id'] in self.val_indices]
+        elif self.split == 'test':
+            self.samples = [s for s in self.samples if s['sequence_id'] in self.test_indices]
 
     def __getitem__(self, idx):
         sample = self.samples[idx]
