@@ -2,7 +2,7 @@ import torch.nn as nn
 from src.models.embedding_handler import TemporalPatchEmbedding
 
 
-class FireTransformer(nn.Module):
+class FiresTransformer(nn.Module):
     def __init__(self, seq_length, in_channels, embed_dim, num_heads, num_layers, patch_size, img_size):
         super(FireTransformer, self).__init__()
         self.seq_length = seq_length
@@ -24,7 +24,7 @@ class FireTransformer(nn.Module):
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
 
         # Output layer
-        self.decoder = nn.Linear(embed_dim, self.temporal_patch_embed.num_patches_per_image)
+        self.decoder = nn.Linear(embed_dim, self.temporal_patch_embed.num_patches)
 
     def forward(self, x):
         # x: [batch_size, seq_length, channels, height, width]
@@ -44,16 +44,16 @@ class FireTransformer(nn.Module):
 
         # Use only the last time step's patches for prediction
         # Assuming the last set of patches corresponds to the latest time step
-        last_time_step_patches = x[:, -self.temporal_patch_embed.num_patches_per_image:, :]  # [batch_size, num_patches_per_image, embed_dim]
+        last_time_step_patches = x[:, -self.temporal_patch_embed.num_patches:, :]  # [batch_size, num_patches, embed_dim]
 
         # Aggregate embeddings (e.g., via mean)
         x = last_time_step_patches.mean(dim=1)  # [batch_size, embed_dim]
 
         # Output layer
-        output = self.decoder(x)  # [batch_size, num_patches_per_image]
+        output = self.decoder(x)  # [batch_size, num_patches]
 
         # Reshape output to image format
-        patch_dim = int(self.temporal_patch_embed.num_patches_per_image ** 0.5)
+        patch_dim = int(self.temporal_patch_embed.num_patches ** 0.5)
         output = output.view(batch_size, 1, patch_dim, patch_dim)  # [batch_size, 1, patch_dim, patch_dim]
 
         # Upsample to original image size

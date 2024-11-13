@@ -1,5 +1,5 @@
 import torch
-import torch.nn as nn
+idataloadermport torch.nn as nn
 from torch.utils.data import DataLoader
 from src.models.dataset import FireDataset
 from src.models.fire_transformer import FireTransformer
@@ -77,7 +77,7 @@ test_loader = DataLoader(
 )
 
 # Get a single batch
-for (input_tensor, weather_tensor), isochrone_mask in dataloader:
+for (input_tensor, weather_tensor), isochrone_mask in train_loader:
     print('Input tensor shape:', input_tensor.shape)
     print('Weather tensor shape:', weather_tensor.shape)
     print('Isochrone mask shape:', isochrone_mask.shape)
@@ -88,7 +88,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Instantiate the model
 model = FireTransformer(
-    seq_length=dataset.sequence_length,  # Use the sequence length from your dataset
+    seq_length=train_dataset.sequence_length,  # Use the sequence length from your dataset
     in_channels=9,                       # C = Fire Spread  (1) + Number of Features (8)
     embed_dim=128,                       # Adjust as needed
     num_heads=4,                         # Adjust as needed
@@ -135,7 +135,7 @@ for epoch in range(num_epochs):
         running_loss += loss.item()
 
         if batch_idx % 10 == 0:
-            print(f'Epoch [{epoch+1}/{num_epochs}], Batch [{batch_idx}/{len(dataloader)}], Loss: {loss.item():.4f}')
+            print(f'Epoch [{epoch+1}/{num_epochs}], Batch [{batch_idx}/{len(train_loader)}], Loss: {loss.item():.4f}')
 
     epoch_loss = running_loss / len(train_loader)
     print(f'Epoch [{epoch+1}/{num_epochs}] Training Loss: {epoch_loss:.4f}')

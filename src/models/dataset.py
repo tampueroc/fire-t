@@ -207,9 +207,7 @@ class FireDataset(Dataset):
 
         # Stack the past frames to create a tensor
         past_frames_tensor = torch.stack(past_frames_masks)  # Shape: [sequence_length, height, width]
-        print('Past frames tensor shape:', past_frames_tensor.shape)
         past_frames_expanded = past_frames_tensor.unsqueeze(1)  # Shape: [sequence_length, 1, height, width]
-        print('Past frames expanded shape:', past_frames_expanded.shape)
 
         # Load target isochrone
         iso_frame_file = sample['iso_frame_files'][sample['iso_target_index']]
@@ -220,15 +218,11 @@ class FireDataset(Dataset):
         # Get landscape data
         y, y_, x, x_ = self._get_spatial_indices(sample)
         landscape_data = self.landscape_data[:, y:y_, x:x_].values  # Shape: [num_features, height, width]
-        print('Landscape data shape:', landscape_data.shape)
         landscape_tensor = torch.from_numpy(landscape_data).float()
-        print('Landscape tensor shape:', landscape_tensor.shape)
         landscape_repeated = landscape_tensor.unsqueeze(0).repeat(self.sequence_length, 1, 1, 1)  # Shape: [sequence_length, num_features, height, width]
-        print('Landscape repeated shape:', landscape_repeated.shape)
 
         # Combine past frames and landscape data
         input_tensor = torch.cat((past_frames_expanded, landscape_repeated), dim=1)  # Shape: [sequence_length, 1 + num_features, height, width]
-        print('Input tensor shape:', input_tensor.shape)
 
         # Load weather data
         weather_tensor = self._get_weather_data(sample)

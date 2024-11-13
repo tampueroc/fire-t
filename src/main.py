@@ -1,4 +1,4 @@
-from models.dataset import FireDataset
+frorder_idom models.dataset import FireDataset
 from torch.utils.data import DataLoader
 transform = None
 sequence_length = 6
