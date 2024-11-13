@@ -1,5 +1,5 @@
 import torch.nn as nn
-from src.models.embedding_handler import TemporalPatchEmbedding
+from models.embedding_handler import TemporalPatchEmbedding
 
 
 class FiresTransformer(nn.Module):
